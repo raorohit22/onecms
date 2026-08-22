@@ -1,0 +1,14 @@
+@import "tailwindcss";
+@import "@onecms/ui/globals.css";
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body {
+  margin: 0;
+  background-color: var(--background, #fff);
+  color: var(--foreground, #000);
+}

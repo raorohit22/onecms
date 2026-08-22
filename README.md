@@ -1,159 +1,78 @@
-# Turborepo starter
+# oneCMS
 
-This Turborepo starter is maintained by the Turborepo core team.
+oneCMS is a focused, AI-assisted Content Management System for managing a blog website. It provides an administrative interface for creating, editing, organizing, and publishing content, alongside a separate public Next.js website. 
 
-## Using this example
+Built as a production-grade MERN stack learning project, it intentionally bounds its scope to a CMS (not a general SaaS or multi-tenant app).
 
-Run the following command:
+| Layer | Technology |
+| --- | --- |
+| **API** | [Node.js](https://nodejs.org/) & [Express](https://expressjs.com/) with TypeScript |
+| **Data** | [MongoDB](https://www.mongodb.com/) & [Mongoose 8](https://mongoosejs.com/) + [Redis](https://redis.io/) |
+| **Auth** | Custom JWT (Access) & Opaque HttpOnly (Refresh) + Global Session Revocation |
+| **CMS** | [React](https://react.dev/) + [shadcn/ui](https://ui.shadcn.com/) + [Tailwind CSS](https://tailwindcss.com/) + [TipTap](https://tiptap.dev/) |
+| **Web** | [Next.js](https://nextjs.org/) App Router + [Tailwind CSS](https://tailwindcss.com/) |
+| **Tooling** | [pnpm](https://pnpm.io/) + [Turborepo](https://turborepo.dev/) + [Vitest](https://vitest.dev/) |
 
-```sh
-npx create-turbo@latest
-```
+### Layout
 
-## What's inside?
+| Path | Purpose |
+| --- | --- |
+| `apps/api` | Node.js + Express backend (HTTP, Auth, Business Logic) |
+| `apps/cms` | React SPA for administrative users and editors |
+| `apps/web` | Next.js public-facing blog website |
+| `apps/docs` | Next.js documentation portal |
+| `docs/` | Repository source-of-truth documentation |
+| `packages/ui` | Shared React components and Tailwind configuration |
+| `packages/eslint-config` | Shared ESLint configurations |
+| `packages/typescript-config` | Shared tsconfig bases |
 
-This Turborepo includes the following packages/apps:
+### Three rules the codebase holds to
 
-### Apps and Packages
+- **Architecture First:** The API is a modular monolith. Controllers remain extremely thin, passing validated payloads down to dedicated Application Services where the core business logic resides.
+- **Fail-Closed Security:** Authorization is strictly enforced server-side. Security decisions default to denying access. 
+- **AI is Assistive:** While oneCMS heavily integrates OpenAI for drafting, outlining, and SEO optimization, AI generated content must *never* be automatically published without human editorial review.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## Quick start
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
+You need [Node.js 18+](https://nodejs.org/) and [pnpm](https://pnpm.io/).
 
 ```sh
-cd my-turborepo
-turbo build
+git clone https://github.com/your-org/oneCMS.git && cd oneCMS
+cp .env.example .env  # Fill in the required secrets
+pnpm install
+
+# Start development servers
+pnpm run dev
 ```
 
-Without global `turbo`, use your package manager:
+The CMS runs on `localhost:5173` (Vite), the API on `localhost:3001`, and the public Web on `localhost:3000`.
 
-```sh
-cd my-turborepo
-npx turbo build
-bun dlx turbo build
-bun exec turbo build
-```
+## Configuration
 
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
+**There is one primary `.env` file located at the repository root.** It is loaded automatically across all apps by `@onecms/env`. Do not scatter environment variables across workspaces unless strictly necessary.
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
+| Variable | Purpose |
+| --- | --- |
+| `PORT` | API Port (defaults to 3001) |
+| `MONGO_URI` | MongoDB connection string |
+| `REDIS_URI` | Redis connection string for session state and rate limiting |
+| `JWT_SECRET` | Secret used to sign RS256 access tokens |
+| `OPENAI_API_KEY` | Used by the AI assistance module |
 
-```sh
-turbo build --filter=docs
-```
+## Tasks
 
-Without global `turbo`:
+| Command | Purpose |
+| --- | --- |
+| `pnpm run dev` | Run all applications in development mode |
+| `pnpm run build` | Build all apps and packages |
+| `pnpm run test` | Run the Vitest/Supertest test suite |
+| `pnpm run typecheck` | Run `tsc --noEmit` across all workspaces |
+| `pnpm run lint` | Run ESLint across the repository |
 
-```sh
-npx turbo build --filter=docs
-bun exec turbo build --filter=docs
-bun exec turbo build --filter=docs
-```
+Scope any command to a specific workspace using Turborepo filters: `pnpm run test --filter @onecms/api`
 
-### Develop
+## Contributing
 
-To develop all apps and packages, run the following command:
+Please refer to `docs/development-workflow.md` and `docs/definition-of-done.md` before starting work. All changes should include appropriate Vitest tests. 
 
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-bun exec turbo dev
-bun exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-bun exec turbo dev --filter=web
-bun exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-bun exec turbo login
-bun exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-bun exec turbo link
-bun exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
+Security issues go through [SECURITY.md](./SECURITY.md), privately, not a public issue.
