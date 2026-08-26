@@ -15,7 +15,7 @@
 # ==============================================================================
 
 # ── Stage 1: Install dependencies ────────────────────────────────────────────
-FROM node:22-alpine AS deps
+FROM node:22-slim AS deps
 
 # pnpm is shipped via corepack in Node 22+
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
@@ -53,13 +53,13 @@ RUN pnpm turbo run build --filter=@onecms/api...
 
 
 # ── Stage 3: Production runner ───────────────────────────────────────────────
-FROM node:22-alpine AS runner
+FROM node:22-slim AS runner
 
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # Run as non-root for security
-RUN addgroup --system --gid 1001 onecms && \
-    adduser --system --uid 1001 onecms
+RUN groupadd --system --gid 1001 onecms && \
+    useradd --system --uid 1001 --gid 1001 onecms
 
 WORKDIR /app
 
@@ -98,6 +98,6 @@ EXPOSE 3001
 
 # Health check — assumes the API has a /health or root endpoint.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+  CMD curl -f http://localhost:3001/health || exit 1
 
 CMD ["node", "apps/api/dist/server.js"]
