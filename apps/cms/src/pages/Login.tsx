@@ -36,7 +36,7 @@ export function Login() {
         email: data.email,
         password: data.password
       });
-      login(response.data.user);
+      await login(response.data.user);
       navigate(from || '/dashboard', { replace: true });
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to login');

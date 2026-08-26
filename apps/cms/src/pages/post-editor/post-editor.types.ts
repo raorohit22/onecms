@@ -8,6 +8,8 @@ export const postFormSchema = z.object({
   categoryIds: z.array(z.string()).default([]),
   tagIds: z.array(z.string()).default([]),
   featuredImage: z.string().optional().default(''),
+  featuredImageAlt: z.string().optional().default(''),
+  featuredImageCaption: z.string().optional().default(''),
   youtubeUrl: z.string().optional().default(''),
   excerpt: z.string().optional().default(''),
   content: z.string().optional().default(''),

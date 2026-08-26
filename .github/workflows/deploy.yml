@@ -1,0 +1,165 @@
+# ==============================================================================
+# Deploy to AWS — oneCMS
+#
+# Architecture (AWS Free Tier optimised):
+#   API  → Docker → ECR → EC2 (t3.micro via Elastic Beanstalk, single-instance)
+#   CMS  → Vite build → S3 static hosting + CloudFront CDN
+#
+# Triggers after CI passes on the main branch.
+#
+# Required GitHub Secrets:
+#   AWS_ACCESS_KEY_ID       — IAM user with ECR, EB, S3, CloudFront permissions
+#   AWS_SECRET_ACCESS_KEY   — corresponding secret key
+#   AWS_REGION              — e.g. ap-south-1
+#   AWS_ACCOUNT_ID          — 12-digit AWS account number
+#   EB_APPLICATION_NAME     — Elastic Beanstalk application name
+#   EB_ENVIRONMENT_NAME     — Elastic Beanstalk environment name
+#   S3_CMS_BUCKET           — S3 bucket for CMS static files
+# ==============================================================================
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:          # Allow manual deploys from the Actions tab
+
+# Only one deploy at a time; queue (don't cancel) if another is running.
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  DO_NOT_TRACK: 1
+  ECR_REPOSITORY: onecms-api
+
+jobs:
+  # ============================================================================
+  # Job 1: Build & Push API Docker Image to ECR
+  # ============================================================================
+  deploy-api:
+    name: Deploy API → Elastic Beanstalk
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── AWS credentials ───────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ── ECR login ─────────────────────────────────────────────────────
+      - name: Login to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # ── Docker build + push ───────────────────────────────────────────
+      - name: Build, tag, and push Docker image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build \
+            -f apps/api/Dockerfile \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
+            .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+
+      # ── Generate Dockerrun.aws.json for EB ────────────────────────────
+      # Elastic Beanstalk's Docker platform reads this to know which image
+      # to pull. We template the ECR URI + commit SHA into it.
+      - name: Generate Dockerrun.aws.json
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          cat > Dockerrun.aws.json <<EOF
+          {
+            "AWSEBDockerrunVersion": "1",
+            "Image": {
+              "Name": "${ECR_REGISTRY}/${ECR_REPOSITORY}:${IMAGE_TAG}",
+              "Update": "true"
+            },
+            "Ports": [
+              { "ContainerPort": 3001, "HostPort": 3001 }
+            ]
+          }
+          EOF
+
+      # ── Deploy to Elastic Beanstalk ───────────────────────────────────
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          application_name: ${{ secrets.EB_APPLICATION_NAME }}
+          environment_name: ${{ secrets.EB_ENVIRONMENT_NAME }}
+          version_label: ${{ github.sha }}
+          region: ${{ secrets.AWS_REGION }}
+          deployment_package: Dockerrun.aws.json
+          wait_for_environment_recovery: 120
+
+  # ============================================================================
+  # Job 2: Deploy CMS (Vite SPA) → S3 + CloudFront
+  # ============================================================================
+  deploy-cms:
+    name: Deploy CMS → S3 + CloudFront
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node + pnpm ─────────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Build CMS ─────────────────────────────────────────────────────
+      - name: Build CMS
+        run: pnpm turbo run build --filter=@onecms/cms
+        env:
+          NODE_ENV: production
+
+      # ── AWS credentials ───────────────────────────────────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # ── Upload to S3 ─────────────────────────────────────────────────
+      - name: Sync CMS build to S3
+        run: |
+          aws s3 sync apps/cms/dist/ s3://${{ secrets.S3_CMS_BUCKET }}/ \
+            --delete \
+            --cache-control "public, max-age=31536000, immutable" \
+            --exclude "index.html"
+
+          # index.html must not be cached aggressively — it references
+          # hashed asset filenames that change on every deploy.
+          aws s3 cp apps/cms/dist/index.html s3://${{ secrets.S3_CMS_BUCKET }}/index.html \
+            --cache-control "public, max-age=0, must-revalidate"

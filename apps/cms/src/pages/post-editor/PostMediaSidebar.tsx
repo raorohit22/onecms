@@ -77,24 +77,14 @@ export const PostMediaSidebar: React.FC<PostMediaSidebarProps> = ({ form }) => {
                 try {
                   const formData = new FormData();
                   formData.append('file', file);
-                  // We'll dispatch a custom event or you can use a proper apiClient call here
-                  // Since we are in the sidebar, we'll use window.fetch as a simple fallback if apiClient isn't exported
-                  const orgId = localStorage.getItem('organizationId') || '';
-                  const token = document.cookie.split('; ').find(row => row.startsWith('accessToken='))?.split('=')[1] || '';
-                  const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-                  
-                  const res = await fetch(`${apiUrl}/media`, {
-                    method: 'POST',
+                  const { apiClient } = await import('../../api/client');
+                  const res = await apiClient.post('/media', formData, {
                     headers: {
-                      'X-Organization-Id': orgId,
-                      'Authorization': `Bearer ${token}`
+                      'Content-Type': 'multipart/form-data',
                     },
-                    body: formData
                   });
                   
-                  if (!res.ok) throw new Error('Upload failed');
-                  const data = await res.json();
-                  setValue('featuredImage', data.url, { shouldDirty: true });
+                  setValue('featuredImage', res.data.url, { shouldDirty: true });
                 } catch (error) {
                   console.error('Failed to upload image', error);
                   alert('Failed to upload image. Check console for details.');
@@ -112,11 +102,32 @@ export const PostMediaSidebar: React.FC<PostMediaSidebarProps> = ({ form }) => {
                 </div>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border/80 p-4 text-center bg-muted/10">
+              <div className="rounded-lg border border-dashed border-border/80 p-4 text-center bg-muted/10 mt-3">
                 <ImageIcon className="h-6 w-6 text-muted-foreground/50 mx-auto mb-1" />
                 <p className="text-xs text-muted-foreground">No thumbnail set. Paste an image URL above.</p>
               </div>
             )}
+            
+            <div className="mt-4 space-y-3 pt-4 border-t border-border/40">
+              <div className="space-y-1.5">
+                <Label htmlFor="featuredImageAlt" className="text-xs">Alt Text (Accessibility)</Label>
+                <Input
+                  id="featuredImageAlt"
+                  {...register('featuredImageAlt')}
+                  placeholder="Describe the image for screen readers"
+                  className="text-xs h-8"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="featuredImageCaption" className="text-xs">Caption (Optional)</Label>
+                <Input
+                  id="featuredImageCaption"
+                  {...register('featuredImageCaption')}
+                  placeholder="Image credit or description"
+                  className="text-xs h-8"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

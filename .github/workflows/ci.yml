@@ -1,0 +1,71 @@
+# ==============================================================================
+# CI Pipeline — oneCMS
+# Runs on every PR and push to main. Gates merges on type-check, lint, test,
+# and build. Uses pnpm + Turborepo for workspace-aware task execution.
+# ==============================================================================
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same PR; never cancel main-branch runs.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+  DO_NOT_TRACK: 1
+  # Minimal secrets so the build/type-check can resolve env validation.
+  # These are NOT real credentials — CI-only placeholders.
+  MONGO_URI: mongodb://localhost:27017/onecms-ci
+  REDIS_HOST: localhost
+  REDIS_PORT: 6379
+  JWT_SECRET: ci-only-jwt-secret
+  JWT_PRIVATE_KEY: ci-only-private-key
+  JWT_PUBLIC_KEY: ci-only-public-key
+  REFRESH_SECRET: ci-only-refresh-secret
+  NODE_ENV: test
+
+jobs:
+  check:
+    name: Typecheck → Lint → Test → Build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ── Node + pnpm ─────────────────────────────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ── Quality gates ───────────────────────────────────────────────────
+      - name: Type-check all packages
+        run: pnpm run check-types
+
+      - name: Lint all packages
+        run: pnpm run lint
+
+      - name: Run tests
+        run: pnpm run test
+
+      - name: Build all packages
+        run: pnpm run build

@@ -1,0 +1,69 @@
+# ==============================================================================
+# .dockerignore — oneCMS API
+#
+# Build context is the REPO ROOT. This file excludes everything that the
+# Dockerfile doesn't need, keeping the Docker build context small and fast.
+# ==============================================================================
+
+# ── Dependencies (re-installed inside the container) ─────────────────────────
+**/node_modules
+
+# ── Build artifacts (rebuilt inside the container) ───────────────────────────
+**/dist
+**/.next
+**/.turbo
+**/out
+**/build
+
+# ── Environment / Secrets ────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Tests ────────────────────────────────────────────────────────────────────
+**/tests
+**/test
+**/__tests__
+**/coverage
+playwright-report
+test-results
+playwright.config.ts
+
+# ── Documentation ────────────────────────────────────────────────────────────
+docs
+**/*.md
+!README.md
+LICENSE
+
+# ── Git / CI ─────────────────────────────────────────────────────────────────
+.git
+.github
+.gitignore
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+.idea
+.vscode
+*.sublime-workspace
+*.swp
+
+# ── Agent / AI ───────────────────────────────────────────────────────────────
+.agents
+.claude
+.gemini
+
+# ── Docker itself ────────────────────────────────────────────────────────────
+**/Dockerfile
+**/.dockerignore
+docker
+docker-compose.yml
+Dockerrun.aws.json
+
+# ── OS junk ──────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Misc ─────────────────────────────────────────────────────────────────────
+scripts
+*.log
+*.pem
+*.key

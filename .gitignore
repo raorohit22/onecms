@@ -1,38 +1,80 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# ==============================================================================
+# oneCMS .gitignore
+# ==============================================================================
 
-# Dependencies
+# ── Dependencies ──────────────────────────────────────────────────────────────
 node_modules
 .pnp
 .pnp.js
+.pnp.cjs
 
-# Local env files
+# ── Environment files ────────────────────────────────────────────────────────
+# The catch-all prevents any .env variant from leaking secrets.
+# `.env.example` is the only env file that should be committed.
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+.env.*
+!.env.example
 
-# Testing
-coverage
+# ── Build outputs ─────────────────────────────────────────────────────────────
+dist
+build
+out/
+.next/
+*.tsbuildinfo
 
-# Turbo
+# ── Turbo ─────────────────────────────────────────────────────────────────────
 .turbo
 
-# Vercel
+# ── Vercel ────────────────────────────────────────────────────────────────────
 .vercel
 
-# Build Outputs
-.next/
-out/
-build
-dist
+# ── Testing ───────────────────────────────────────────────────────────────────
+coverage
+playwright-report/
+test-results/
+.nyc_output
 
-
-# Debug
+# ── Logs ──────────────────────────────────────────────────────────────────────
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Misc
+# ── OS files ──────────────────────────────────────────────────────────────────
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+*.sublime-workspace
+*.sublime-project
+*.swp
+*.swo
+*~
+
+# ── Security ──────────────────────────────────────────────────────────────────
 *.pem
+*.key
+*.crt
+*.p12
+
+# ── Docker ────────────────────────────────────────────────────────────────────
+docker-data/
+
+# ── Agent / AI worktrees ─────────────────────────────────────────────────────
+.claude/
+.gemini/
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
+# Orphaned backup files from npm/pnpm operations
+package.json.*
+!package.json
+*.bak
+*.orig
+*.tmp

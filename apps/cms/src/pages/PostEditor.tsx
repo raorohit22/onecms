@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+/* eslint-disable react/display-name */
+import React from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useForm, Controller, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -29,12 +30,15 @@ const QuillEditor = React.lazy(() =>
   import('@onecms/ui/components/rich-text-editor').then((module) => ({ default: module.RichTextEditor }))
 );
 
-function ContentStats({ control }: { control: any }) {
+import type { Control } from 'react-hook-form';
+
+const extractText = (htmlString: string): string => {
+  if (!htmlString || typeof htmlString !== 'string') return '';
+  return htmlString.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
+};
+
+function ContentStats({ control }: { control: Control<PostFormData> }) {
   const currentContent = useWatch({ control, name: 'content' });
-  const extractText = (htmlString: string): string => {
-    if (!htmlString || typeof htmlString !== 'string') return '';
-    return htmlString.replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').trim();
-  };
   const textOnly = extractText(currentContent);
   const wordCount = textOnly ? textOnly.split(/\s+/).filter(Boolean).length : 0;
   const readTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
@@ -83,9 +87,32 @@ export function PostEditor() {
     enabled: isEditing,
   });
 
+  const post = query.data;
+
   const form = useForm<PostFormData>({
-    resolver: zodResolver(postFormSchema),
-    defaultValues: {
+    resolver: zodResolver(postFormSchema) as any,
+    values: (isEditing && post) ? {
+      title: post.title || '',
+      slug: post.slug || '',
+      excerpt: post.excerpt || '',
+      content: post.content || '',
+      status: post.status || 'DRAFT',
+      authorId: typeof post.authorId === 'string' ? post.authorId : post.authorId?._id || user?.id || '',
+      categoryIds: (post.categoryIds || []).map((c: any) => (typeof c === 'string' ? c : c._id || c.id)),
+      tagIds: (post.tagIds || []).map((t: any) => (typeof t === 'string' ? t : t._id || t.id)),
+      featuredImage: post.featuredImage || '',
+      featuredImageAlt: post.featuredImageAlt || '',
+      featuredImageCaption: post.featuredImageCaption || '',
+      youtubeUrl: post.youtubeUrl || '',
+      seo: {
+        metaTitle: post.seo?.metaTitle || '',
+        metaDescription: post.seo?.metaDescription || '',
+        canonicalUrl: post.seo?.canonicalUrl || '',
+        ogImage: post.seo?.ogImage || post.featuredImage || '',
+        keywords: post.seo?.keywords || '',
+        noIndex: post.seo?.noIndex || false,
+      },
+    } : {
       title: '',
       slug: '',
       excerpt: '',
@@ -95,6 +122,8 @@ export function PostEditor() {
       categoryIds: [],
       tagIds: [],
       featuredImage: '',
+      featuredImageAlt: '',
+      featuredImageCaption: '',
       youtubeUrl: '',
       seo: {
         metaTitle: '',
@@ -105,37 +134,10 @@ export function PostEditor() {
         noIndex: false,
       },
     },
-  });
-
-  // Form hook initialization
-
-
-  // Populate initial values when post data is loaded
-  useEffect(() => {
-    if (isEditing && query.data) {
-      const post = query.data;
-      form.reset({
-        title: post.title || '',
-        slug: post.slug || '',
-        excerpt: post.excerpt || '',
-        content: post.content || '',
-        status: post.status || 'DRAFT',
-        authorId: typeof post.authorId === 'string' ? post.authorId : post.authorId?._id || user?.id || '',
-        categoryIds: (post.categoryIds || []).map((c: any) => (typeof c === 'string' ? c : c._id || c.id)),
-        tagIds: (post.tagIds || []).map((t: any) => (typeof t === 'string' ? t : t._id || t.id)),
-        featuredImage: post.featuredImage || '',
-        youtubeUrl: post.youtubeUrl || '',
-        seo: {
-          metaTitle: post.seo?.metaTitle || '',
-          metaDescription: post.seo?.metaDescription || '',
-          canonicalUrl: post.seo?.canonicalUrl || '',
-          ogImage: post.seo?.ogImage || post.featuredImage || '',
-          keywords: post.seo?.keywords || '',
-          noIndex: post.seo?.noIndex || false,
-        },
-      });
+    resetOptions: {
+      keepDirtyValues: true,
     }
-  }, [isEditing, query.data, form, user]);
+  });
 
   // Setup debounced autosaving
   usePostAutosave({

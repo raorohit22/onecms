@@ -1,6 +1,0 @@
-ignore-workspace-root-check: true
-dangerouslyAllowAllBuilds: true
-minimumReleaseAge: 0
-packages:
-  - playground
-  - docs

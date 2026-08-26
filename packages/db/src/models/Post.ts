@@ -20,6 +20,8 @@ export interface IPost {
   categoryIds: Schema.Types.ObjectId[];
   tagIds: Schema.Types.ObjectId[];
   featuredImage?: string;
+  featuredImageAlt?: string;
+  featuredImageCaption?: string;
   featuredMediaId?: Schema.Types.ObjectId;
   youtubeUrl?: string;
 
@@ -58,6 +60,8 @@ const postSchema = new Schema<IPostDocument>({
   categoryIds: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
   tagIds: [{ type: Schema.Types.ObjectId, ref: 'Tag' }],
   featuredImage: { type: String, default: '' },
+  featuredImageAlt: { type: String, default: '' },
+  featuredImageCaption: { type: String, default: '' },
   featuredMediaId: { type: Schema.Types.ObjectId },
   youtubeUrl: { type: String, default: '' },
   
@@ -104,6 +108,8 @@ async function createAuditLog(doc: IPostDocument, eventType: string, options: an
       categoryIds: doc.categoryIds,
       tagIds: doc.tagIds,
       featuredImage: doc.featuredImage,
+      featuredImageAlt: doc.featuredImageAlt,
+      featuredImageCaption: doc.featuredImageCaption,
       youtubeUrl: doc.youtubeUrl,
       seo: doc.seo
     };

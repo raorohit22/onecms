@@ -24,7 +24,11 @@ export function OrganizationProvider({ children }: { children: React.ReactNode }
       const storedOrgId = localStorage.getItem('organizationId');
       const hasStoredOrg = memberships.some(m => m.organization.id === storedOrgId);
       
-      if (!hasStoredOrg) {
+      if (hasStoredOrg && storedOrgId) {
+        if (activeOrganizationId !== storedOrgId) {
+          setActiveOrganizationId(storedOrgId);
+        }
+      } else {
         const defaultOrgId = memberships[0].organization.id;
         setActiveOrganizationId(defaultOrgId);
         localStorage.setItem('organizationId', defaultOrgId);

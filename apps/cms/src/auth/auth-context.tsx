@@ -28,7 +28,7 @@ interface AuthContextType {
   memberships: Membership[];
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (user: User) => void;
+  login: (user: User) => Promise<void>;
   logout: () => void;
   refetchUser: () => Promise<void>;
 }
@@ -44,8 +44,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const refetchUser = async () => {
     try {
       const response = await apiClient.get('/auth/me');
-      setUser(response.data.user);
-      setMemberships(response.data.memberships);
+      const fetchedUser = response.data.user;
+      const fetchedMemberships = response.data.memberships;
+      setUser(fetchedUser);
+      setMemberships(fetchedMemberships);
+
+      if (fetchedMemberships && fetchedMemberships.length > 0) {
+        const storedOrgId = localStorage.getItem('organizationId');
+        const hasStoredOrg = fetchedMemberships.some((m: any) => m.organization.id === storedOrgId);
+        if (!hasStoredOrg) {
+          localStorage.setItem('organizationId', fetchedMemberships[0].organization.id);
+        }
+      }
     } catch (error) {
       setUser(null);
       setMemberships([]);
@@ -67,9 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
-  const login = (userData: User) => {
+  const login = async (userData: User) => {
     setUser(userData);
-    refetchUser();
+    await refetchUser();
     navigate('/dashboard');
   };
 

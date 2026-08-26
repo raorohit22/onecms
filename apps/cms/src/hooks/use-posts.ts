@@ -21,6 +21,8 @@ export interface PostItem {
   categoryIds?: string[];
   tagIds?: string[];
   featuredImage?: string;
+  featuredImageAlt?: string;
+  featuredImageCaption?: string;
   youtubeUrl?: string;
   seo?: {
     metaTitle?: string;
@@ -42,6 +44,8 @@ export interface PostFormInput {
   categoryIds?: string[];
   tagIds?: string[];
   featuredImage?: string;
+  featuredImageAlt?: string;
+  featuredImageCaption?: string;
   youtubeUrl?: string;
   excerpt?: string;
   content?: string;

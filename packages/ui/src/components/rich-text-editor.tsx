@@ -41,7 +41,7 @@ const formats = [
 export function RichTextEditor({ value, onChange }: RichTextEditorProps) {
 
   return (
-    <div className="rounded-xl border bg-card text-card-foreground shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all overflow-hidden [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:bg-muted/30 [&_.ql-container]:border-none [&_.ql-editor]:min-h-[300px]">
+    <div className="rounded-xl border bg-card text-card-foreground shadow-sm focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all overflow-hidden [&_.quill]:flex [&_.quill]:flex-col [&_.quill]:h-[70vh] [&_.ql-toolbar]:border-none [&_.ql-toolbar]:border-b [&_.ql-toolbar]:bg-muted/30 [&_.ql-toolbar]:shrink-0 [&_.ql-container]:border-none [&_.ql-container]:flex-1 [&_.ql-container]:overflow-hidden [&_.ql-editor]:h-full [&_.ql-editor]:overflow-y-auto">
       <ReactQuill
         theme="snow"
         value={value || ''}
