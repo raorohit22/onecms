@@ -17,6 +17,9 @@
 # ── Stage 1: Install dependencies ────────────────────────────────────────────
 FROM node:22-slim AS deps
 
+# Install build tools for native addons (redis-memory-server uses make)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
 # pnpm is shipped via corepack in Node 22+
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
